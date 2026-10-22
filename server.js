@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import multer from 'multer';
 import sharp from 'sharp';
 import nodemailer from 'nodemailer';
@@ -23,8 +23,8 @@ const towns = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirna
 const scrypt = promisify(crypto.scrypt);
 
 // ---------- database ----------
-const db = new Database(path.join(DATA, 'app.db'));
-db.pragma('journal_mode = WAL');
+const db = new DatabaseSync(path.join(DATA, 'app.db'));
+db.exec('PRAGMA journal_mode = WAL');
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE,
@@ -146,8 +146,8 @@ app.post('/api/signup', authLimit, async (req, res) => {
   if (String(password).length < 8 || String(password).length > 200) return fail(res, 400, 'Password must be at least 8 characters.');
   if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(em)) return fail(res, 409, 'That email already has an account. Sign in instead.');
   const salt = crypto.randomBytes(16).toString('hex');
-  const id = db.prepare('INSERT INTO users (name,email,salt,pw,town,created) VALUES (?,?,?,?,?,?)')
-    .run(nm, em, salt, await hashPw(password, salt), String(town).slice(0, 40), Date.now()).lastInsertRowid;
+  const id = Number(db.prepare('INSERT INTO users (name,email,salt,pw,town,created) VALUES (?,?,?,?,?,?)')
+    .run(nm, em, salt, await hashPw(password, salt), String(town).slice(0, 40), Date.now()).lastInsertRowid);
   startSession(res, id);
   res.json(publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(id)));
 });
@@ -205,8 +205,8 @@ app.post('/api/reports', needUser, writeLimit, up.single('photo'), async (req, r
     return res.json({ repeat: count, emailed: false });
   }
 
-  const id = db.prepare('INSERT INTO reports (user_id,town,road,size,lat,lng,note,created) VALUES (?,?,?,?,?,?,?,?)')
-    .run(req.user.id, town, road, size, lat, lng, note, Date.now()).lastInsertRowid;
+  const id = Number(db.prepare('INSERT INTO reports (user_id,town,road,size,lat,lng,note,created) VALUES (?,?,?,?,?,?,?,?)')
+    .run(req.user.id, town, road, size, lat, lng, note, Date.now()).lastInsertRowid);
   db.prepare('INSERT INTO photos (hash,bits,count,report_id,created) VALUES (?,?,?,?,?)').run(hex(bits), bits, 1, id, Date.now());
   fs.writeFileSync(path.join(UPLOADS, id + '.jpg'), jpg);
 
