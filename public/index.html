@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pothole Patrol</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0B2F33;--bg2:#12474C;--card:#FFF6E8;--ink:#10282B;--mute:#6C8487;--cream:#FFF6E8;--coral:#FF6A3D;--mint:#7DF0C0;--line:rgba(255,246,232,.18);--bad:#FF9C84;color-scheme:dark;box-sizing:border-box}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:radial-gradient(120% 80% at 50% 0%,var(--bg2),var(--bg) 70%);color:var(--cream);font-family:'Sora',system-ui,-apple-system,'Segoe UI',sans-serif;overflow:hidden}
+.app{position:fixed;inset:0;max-width:520px;margin:0 auto;padding-top:env(safe-area-inset-top,0px)}
+.top{position:absolute;top:env(safe-area-inset-top,0px);left:0;right:0;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:5}
+.back{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--line);background:transparent;color:var(--cream);font-size:20px;cursor:pointer;visibility:hidden}
+.back.on{visibility:visible}
+.dots{display:flex;gap:6px}.dots i{width:22px;height:5px;border-radius:9px;background:var(--line);transition:.3s}.dots i.on{background:var(--mint)}
+.pad{width:40px}
+.screen{position:absolute;inset:0;padding:calc(70px + env(safe-area-inset-top,0px)) 20px calc(22px + env(safe-area-inset-bottom,0px));display:none;flex-direction:column;overflow-y:auto}
+.screen.on{display:flex;animation:in .3s ease-out}
+@keyframes in{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+h1{font-size:clamp(30px,9vw,40px);line-height:1.05;letter-spacing:-1.2px;margin:6px 0 8px;font-weight:800}
+.sub{color:#B9CFCD;margin:0 0 18px;font-size:16px}
+.btn{font:inherit;border:0;cursor:pointer;border-radius:18px;font-weight:800;font-size:17px;padding:17px;width:100%;background:var(--coral);color:#fff;transition:transform .15s}
+.btn:active{transform:scale(.98)}.btn:disabled{opacity:.5}
+.btn.alt{background:transparent;border:1.5px solid var(--line);color:var(--cream);font-weight:600;font-size:15px;padding:13px}
+a.btn{text-decoration:none;display:block;text-align:center}
+:focus-visible{outline:3px solid var(--mint);outline-offset:3px}
+/* screen 1 */
+.hero{flex:1;display:grid;place-items:center;position:relative}
+.ring{position:relative;width:min(70vw,270px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:var(--coral);box-shadow:0 0 0 12px rgba(255,106,61,.2),0 0 0 28px rgba(255,106,61,.09);cursor:pointer;transition:transform .15s}
+.ring:active{transform:scale(.96)}.ring:focus-within{outline:3px solid var(--mint);outline-offset:10px}
+.ring input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border-radius:50%}
+.ring span{display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:800;font-size:20px;pointer-events:none}
+.tip{text-align:center;color:#B9CFCD;font-size:14px;margin-top:10px}
+/* screen 2 */
+.thumb{height:150px;border-radius:20px;background:var(--bg2) center/cover;margin-bottom:16px;border:1.5px solid var(--line)}
+.sizes{display:grid;gap:10px}
+.size{display:flex;align-items:center;gap:16px;text-align:left;background:var(--card);color:var(--ink);border:0;border-radius:22px;padding:14px 16px;font:inherit;cursor:pointer;transition:transform .15s}
+.size:active{transform:scale(.98)}
+.size b{display:block;font-size:18px}.size small{color:var(--mute);font-size:14px}
+.hole{flex:none;width:56px;height:56px;display:grid;place-items:center}
+.hole i{display:block;border-radius:50%;background:#2A3033;box-shadow:inset 0 3px 6px rgba(0,0,0,.6)}
+/* screen 3 */
+.map{position:relative;height:190px;border-radius:24px;overflow:hidden;background:var(--bg2);border:1.5px solid var(--line);margin-bottom:12px}
+.map svg{position:absolute;inset:0;width:100%;height:100%}.map path{stroke:var(--line);stroke-width:1.5;fill:none}
+.pw{position:absolute;left:50%;top:50%;opacity:0;transition:.3s}.map.on .pw{opacity:1}
+.pw::after{content:"";position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;background:var(--coral);box-shadow:0 0 0 4px var(--bg)}
+.pw::before{content:"";position:absolute;left:-34px;top:-34px;width:68px;height:68px;border-radius:50%;border:2px solid var(--coral);opacity:0}
+.map.pulse .pw::before{animation:p 1.4s ease-out 2}@keyframes p{from{transform:scale(.3);opacity:.9}to{transform:scale(1.5);opacity:0}}
+.empty{position:absolute;inset:0;display:grid;place-items:center;color:#B9CFCD}.map.on .empty{display:none}
+.co{font-variant-numeric:tabular-nums;font-weight:800;font-size:20px;min-height:28px}
+.co small{display:block;font-weight:400;color:#B9CFCD;font-size:13px}
+.co a{color:var(--mint);font-size:14px;font-weight:600}
+.msg{font-size:14px;min-height:20px;margin:8px 0}.msg.err{color:var(--bad)}.msg.ok{color:var(--mint)}
+details{margin:6px 0 12px}summary{cursor:pointer;color:#B9CFCD;font-size:14px}
+input[type=text],input[type=email],select,textarea{width:100%;font:inherit;font-size:16px;padding:13px 14px;border-radius:14px;border:1.5px solid var(--line);background:rgba(255,246,232,.07);color:var(--cream)}
+select option{color:#10282B}textarea{min-height:60px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.sp{flex:1;min-height:12px}
+/* screen 4 */
+.lab{font-size:13px;color:#B9CFCD;margin:14px 0 6px;display:block}
+.seg{display:flex;background:rgba(255,246,232,.08);border-radius:16px;padding:4px;gap:4px;margin-top:12px}
+.seg label{flex:1}.seg input{position:absolute;opacity:0}
+.seg span{display:block;text-align:center;padding:10px 4px;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer}
+.seg input:checked+span{background:var(--cream);color:var(--ink)}.seg input:focus-visible+span{outline:3px solid var(--mint)}
+.info{background:rgba(255,246,232,.08);border-radius:16px;padding:12px 14px;font-size:14px;margin-top:12px;color:#D9E6E4}
+.info b{display:block;color:var(--cream);font-size:15px;margin-bottom:2px}
+.row{display:flex;gap:8px;margin-top:10px}
+.sum{display:flex;gap:12px;align-items:center;margin-top:14px;font-size:14px;color:#B9CFCD}
+.sum .thumb{height:54px;width:54px;margin:0;border-radius:14px;flex:none}
+.chk{font-size:14px;padding:10px 14px;border-radius:14px;background:rgba(255,246,232,.08);margin:-4px 0 14px;min-height:40px}.chk.ok{color:var(--mint)}.chk.bad{color:var(--bad)}
+.gate{position:fixed;inset:0;z-index:20;background:radial-gradient(120% 80% at 50% 0%,var(--bg2),var(--bg) 70%);display:flex;flex-direction:column;justify-content:center;padding:24px 22px;max-width:520px;margin:0 auto}.gate[hidden]{display:none}.gate input,.gate select{margin-bottom:10px}.fine{font-size:12px;color:#B9CFCD;margin:4px 0 14px}
+.rk{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:16px;background:rgba(255,246,232,.08);margin-bottom:8px}.rk.me{outline:2px solid var(--mint)}.rk .n{width:30px;font-weight:800;font-size:18px}.rk .nm{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis}.rk small{color:#B9CFCD;display:block;font-weight:400}.rk .c{font-weight:800;font-size:20px;text-align:right}.rk button{width:auto;padding:9px 12px;font-size:14px}
+.bh{display:flex;justify-content:space-between;align-items:center}.board h2{font-size:18px;margin:22px 0 10px}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--cream);color:var(--ink);padding:11px 16px;border-radius:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:9}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head>
+<body>
+<div class="app">
+  <div class="top"><button class="back" id="back" aria-label="Back">←</button><div class="dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div><button class="back on" id="lb" type="button" aria-label="Leaderboard" style="visibility:visible;display:grid;place-items:center;padding:0"><svg width='24' height='24' viewBox='0 0 24 24' fill='none' aria-hidden='true'><rect x='2' y='13' width='6.5' height='8' rx='1.6' fill='#FFF6E8' opacity='.55'/><rect x='8.75' y='9' width='6.5' height='12' rx='1.6' fill='#FF6A3D'/><rect x='15.5' y='15.5' width='6.5' height='5.5' rx='1.6' fill='#FFF6E8' opacity='.35'/><path d='M12 1.6l1.15 2.4 2.6.35-1.9 1.8.5 2.6L12 7.4 9.65 8.75l.5-2.6-1.9-1.8 2.6-.35z' fill='#7DF0C0'/></svg></button></div>
+
+  <section class="screen on" id="s0">
+    <h1>See a pothole?<br>Snap it.</h1>
+    <p class="sub">Four quick taps and it’s on its way to your town.</p>
+    <div class="hero"><label class="ring"><span><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>Take photo</span>
+      <input type="file" id="photo" accept="image/*" capture="environment" aria-label="Take or choose a photo of the pothole"></label></div>
+    <p class="tip">Get the whole hole in the frame. Stay out of traffic.</p>
+  </section>
+
+  <section class="screen" id="s1">
+    <div class="thumb" id="th1"></div>
+    <h1>How big is it?</h1>
+    <p class="sub">Tap one to continue.</p>
+    <div class="chk" id="chk" role="status" aria-live="polite"></div>
+    <div class="sizes">
+      <button class="size" data-v="Small"><span class="hole"><i style="width:22px;height:22px"></i></span><span><b>Small</b><small>Smaller than a dinner plate</small></span></button>
+      <button class="size" data-v="Medium"><span class="hole"><i style="width:38px;height:38px"></i></span><span><b>Medium</b><small>About the size of a tire</small></span></button>
+      <button class="size" data-v="Large and dangerous"><span class="hole"><i style="width:56px;height:56px"></i></span><span><b>Large</b><small>Could damage a car or bike</small></span></button>
+    </div>
+  </section>
+
+  <section class="screen" id="s2">
+    <h1>Where is it?</h1>
+    <p class="sub">Stand next to the pothole, then tap below.</p>
+    <div class="map" id="map"><svg viewBox="0 0 400 190" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M0 50H400M0 140H400M90 0V190M210 0V190M330 0V190M0 190L400 0"/></svg><div class="empty">No location yet</div><div class="pw"></div></div>
+    <div class="co" id="co" aria-live="polite"></div>
+    <div class="msg" id="gmsg" role="status"></div>
+    <details id="man"><summary>Enter coordinates by hand</summary><div class="two"><input type="text" id="lat" inputmode="decimal" placeholder="Latitude" aria-label="Latitude"><input type="text" id="lng" inputmode="decimal" placeholder="Longitude" aria-label="Longitude"></div></details>
+    <textarea id="note" placeholder="Landmark or note (optional)" aria-label="Landmark or note"></textarea>
+    <div class="sp"></div>
+    <button class="btn" id="gps" type="button">Use my current location</button>
+    <button class="btn alt" id="next2" type="button" style="margin-top:10px" hidden>Continue</button>
+  </section>
+
+  <section class="screen" id="s3">
+    <h1>Send it</h1>
+    <label class="lab" for="town" style="margin-top:0">Connecticut town</label>
+    <select id="town"></select>
+    <div class="seg" role="radiogroup" aria-label="Road type"><label><input type="radio" name="road" value="town" checked><span>Town road</span></label><label><input type="radio" name="road" value="state"><span>State road</span></label></div>
+    <div class="info" id="info"></div>
+    <div class="row" id="links"></div>
+    <div id="emailBox"><label class="lab" for="to">Email for this office</label><input type="email" id="to" autocomplete="email" placeholder="publicworks@town.gov"></div>
+    <div class="sum"><div class="thumb" id="th2"></div><span id="sumT"></span></div>
+    <div class="msg" id="smsg" role="status"></div>
+    <div class="sp"></div>
+    <div class="row"><button class="btn alt" id="copy" type="button">Copy report</button><button class="btn alt" id="dl" type="button">Save photo</button></div>
+    <button class="btn" id="send" type="button" style="margin-top:10px">Send report</button>
+  </section>
+</div>
+<div class="gate" id="gate" hidden>
+  <h1>Join Pothole Patrol</h1>
+  <p class="sub" id="gsubt">Create your account once. Reports then go out under your name.</p>
+  <input type="text" id="gname" placeholder="Your name" autocomplete="name" aria-label="Your name">
+  <select id="gtown" aria-label="Your Connecticut town"></select>
+  <input type="email" id="gemail" placeholder="Email" autocomplete="email" aria-label="Email" required>
+  <input type="password" id="gpw" placeholder="Password (8+ characters)" autocomplete="current-password" aria-label="Password" required>
+  <p class="fine" id="gfine">Your email and password are stored privately, and the password is salted and hashed.</p>
+  <div class="msg" id="gerr" role="status"></div>
+  <button class="btn" id="gsub" type="button">Create account</button>
+  <button class="btn alt" id="gtog" type="button" style="margin-top:10px"></button>
+</div>
+<div class="gate board" id="board" hidden style="justify-content:flex-start;overflow-y:auto">
+  <div class="bh"><h1>Road Heroes <svg width='30' height='30' viewBox='0 0 32 32' style='vertical-align:-4px;margin-left:6px' aria-hidden='true'><path d='M16 3l8 22H8z' fill='#FF6A3D'/><path d='M13.2 11h5.6l1.2 3.4h-8z' fill='#FFF6E8'/><path d='M10.8 18h10.4l1.2 3.4H9.6z' fill='#FFF6E8'/><rect x='4' y='25' width='24' height='4' rx='2' fill='#FF6A3D'/></svg></h1><button class="back on" id="bclose" type="button" aria-label="Close" style="visibility:visible">✕</button></div>
+  <p class="sub">Ranked by reported potholes that got filled.</p>
+  <div id="blist" aria-live="polite"></div>
+  <div id="admin" hidden><h2>Open reports: mark as filled</h2><div id="olist"></div></div>
+  <button class="btn alt" id="gout" type="button" style="margin-top:22px">Sign out</button>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const $=id=>document.getElementById(id),q=s=>document.querySelector(s);
+const TOWNS="Andover,Ansonia,Ashford,Avon,Barkhamsted,Beacon Falls,Berlin,Bethany,Bethel,Bethlehem,Bloomfield,Bolton,Bozrah,Branford,Bridgeport,Bridgewater,Bristol,Brookfield,Brooklyn,Burlington,Canaan,Canterbury,Canton,Chaplin,Cheshire,Chester,Clinton,Colchester,Colebrook,Columbia,Cornwall,Coventry,Cromwell,Danbury,Darien,Deep River,Derby,Durham,East Granby,East Haddam,East Hampton,East Hartford,East Haven,East Lyme,East Windsor,Eastford,Easton,Ellington,Enfield,Essex,Fairfield,Farmington,Franklin,Glastonbury,Goshen,Granby,Greenwich,Griswold,Groton,Guilford,Haddam,Hamden,Hampton,Hartford,Hartland,Harwinton,Hebron,Kent,Killingly,Killingworth,Lebanon,Ledyard,Lisbon,Litchfield,Lyme,Madison,Manchester,Mansfield,Marlborough,Meriden,Middlebury,Middlefield,Middletown,Milford,Monroe,Montville,Morris,Naugatuck,New Britain,New Canaan,New Fairfield,New Hartford,New Haven,New London,New Milford,Newington,Newtown,Norfolk,North Branford,North Canaan,North Haven,North Stonington,Norwalk,Norwich,Old Lyme,Old Saybrook,Orange,Oxford,Plainfield,Plainville,Plymouth,Pomfret,Portland,Preston,Prospect,Putnam,Redding,Ridgefield,Rocky Hill,Roxbury,Salem,Salisbury,Scotland,Seymour,Sharon,Shelton,Sherman,Simsbury,Somers,South Windsor,Southbury,Southington,Sprague,Stafford,Stamford,Sterling,Stonington,Stratford,Suffield,Thomaston,Thompson,Tolland,Torrington,Trumbull,Union,Vernon,Voluntown,Wallingford,Warren,Washington,Waterbury,Waterford,Watertown,West Hartford,West Haven,Westbrook,Weston,Westport,Wethersfield,Willington,Wilton,Winchester,Windham,Windsor,Windsor Locks,Wolcott,Woodbridge,Woodbury,Woodstock".split(',');
+const GL={portal:'https://www.glastonburyct.gov/departments/department-directory-a-h/highway',list:'https://www.glastonburyct.gov/departments/department-directory-a-h/highway/streets-transportation/town-vs-state-roads'};
+let blob=null,url=null,size='',step=0;
+const sv=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},ld=k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}};
+const toast=t=>{const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),2600)};
+const gs=()=>$('town').value==='Glastonbury'&&q('input[name=road]:checked').value;
+
+$('town').innerHTML=TOWNS.map(t=>'<option>'+t+'</option>').join('');
+$('town').value=ld('pp_town')||'Glastonbury';
+
+function go(n){step=n;document.querySelectorAll('.screen').forEach((s,i)=>s.classList.toggle('on',i===n));
+  document.querySelectorAll('.dots i').forEach((d,i)=>d.classList.toggle('on',i<=n));$('back').classList.toggle('on',n>0);
+  if(n===3)drawDest();if(n===2&&valid())$('next2').hidden=false;}
+$('back').onclick=()=>go(Math.max(0,step-1));
+const dots=document.querySelectorAll('.dots i');dots[0].classList.add('on');
+
+$('photo').onchange=e=>{
+  const f=e.target.files&&e.target.files[0];if(!f)return;
+  const im=new Image(),u=URL.createObjectURL(f);
+  im.onload=()=>{const s=Math.min(1,1400/Math.max(im.width,im.height)),c=document.createElement('canvas');
+    c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    c.toBlob(b=>{blob=b;gotPhoto(b);if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(b);
+      $('th1').style.backgroundImage=$('th2').style.backgroundImage='url('+url+')';go(1)},'image/jpeg',.82);URL.revokeObjectURL(u)};
+  im.onerror=()=>toast('That file couldn’t be read. Try another photo.');im.src=u;
+};
+document.querySelectorAll('.size').forEach(b=>b.onclick=()=>{size=b.dataset.v;go(2)});
+
+function valid(){const a=parseFloat($('lat').value),b=parseFloat($('lng').value);return isFinite(a)&&isFinite(b)&&Math.abs(a)<=90&&Math.abs(b)<=180}
+function show(acc){if(!valid()){$('map').classList.remove('on');$('co').innerHTML='';$('next2').hidden=true;return}
+  const a=parseFloat($('lat').value),b=parseFloat($('lng').value);
+  $('co').innerHTML=a.toFixed(5)+', '+b.toFixed(5)+'<small>'+(acc?'Accurate to about '+Math.round(acc)+' m':'Entered by hand')+' · <a href="https://www.google.com/maps?q='+a+','+b+'" target="_blank" rel="noopener">Check on map</a></small>';
+  $('map').classList.add('on','pulse');$('next2').hidden=false;$('gps').className='btn alt';}
+['lat','lng'].forEach(i=>$(i).oninput=()=>show());
+$('next2').onclick=()=>go(3);
+$('gps').onclick=()=>{
+  const m=$('gmsg');m.className='msg';m.textContent='';
+  if(!navigator.geolocation){m.className='msg err';m.textContent='This browser can’t share location. Enter coordinates by hand.';$('man').open=true;return}
+  m.className='msg';m.textContent='Your browser will ask to share your location. Tap Allow.';$('gps').textContent='Finding you…';$('gps').disabled=true;
+  navigator.geolocation.getCurrentPosition(p=>{$('gps').disabled=false;$('gps').textContent='Update my location';
+    $('lat').value=p.coords.latitude.toFixed(6);$('lng').value=p.coords.longitude.toFixed(6);show(p.coords.accuracy);
+    m.className='msg ok';m.textContent='Pinned.';setTimeout(()=>{if(step===2)go(3)},1100)},
+   e=>{$('gps').disabled=false;$('gps').textContent='Use my current location';m.className='msg err';
+    m.textContent=e.code===1?'Location is blocked. Allow it from the lock icon in your address bar, or enter coordinates by hand.':'Couldn’t get a fix. Try outside, or enter coordinates by hand.';$('man').open=true},
+   {enableHighAccuracy:true,timeout:15000,maximumAge:0});
+};
+
+function drawDest(){
+  const t=$('town').value,r=q('input[name=road]:checked').value,g=t==='Glastonbury';
+  const L=(h,x)=>'<a class="btn alt" href="'+h+'" target="_blank" rel="noopener">'+x+'</a>';
+  const srch=s=>'https://www.google.com/search?q='+encodeURIComponent(s);
+  let title,txt,links;
+  if(g&&r==='town'){title='Glastonbury Highway Division';txt='Town roads use the town’s online service request. You can also call Customer Service.';links=L(GL.portal,'Open request form')+L('tel:8606527710','Call 860-652-7710')}
+  else if(g){title='CT DOT Maintenance Garage';txt='Routes 2, 3, 83, 160, plus parts of 17 and 94 are state roads.';links=L('tel:8606331159','Call 860-633-1159')+L(GL.list,'State road list')}
+  else if(r==='town'){title=t+' Public Works';txt='Find the town’s pothole reporting page or email, then add the email below to send from here.';links=L(srch('report pothole '+t+' CT public works'),'Find '+t+' page')}
+  else{title='CT DOT';txt='State roads are fixed by the Connecticut Department of Transportation, not the town.';links=L(srch('CT DOT report pothole state road'),'Find CT DOT contact')}
+  $('info').innerHTML='<b>'+title+'</b>'+txt;$('links').innerHTML=links;
+  $('emailBox').hidden=g&&r==='town';$('to').value=ld('pp_to_'+t);
+  $('sumT').textContent=(size||'Medium')+' pothole · '+(valid()?$('lat').value.slice(0,8)+', '+$('lng').value.slice(0,9):'no location');
+}
+$('town').onchange=()=>{sv('pp_town',$('town').value);drawDest()};
+document.querySelectorAll('input[name=road]').forEach(i=>i.onchange=drawDest);
+$('to').oninput=e=>sv('pp_to_'+$('town').value,e.target.value);
+
+function report(){
+  const t=$('town').value,r=q('input[name=road]:checked').value,a=parseFloat($('lat').value).toFixed(6),b=parseFloat($('lng').value).toFixed(6),n=$('note').value.trim();
+  const who=r==='state'?'CT DOT':(t+' Public Works');
+  return{subject:(rep>1?'REPEAT REPORT x'+rep+': ':'')+'Pothole report ('+t+', CT): '+a+', '+b,
+   body:'Hello '+who+',\n\nI’d like to report a pothole that needs repair.\n\nTown: '+t+', CT\nSize: '+(size||'Medium')+'\nCoordinates: '+a+', '+b+'\nMap: https://www.google.com/maps?q='+a+','+b+(n?'\nNotes: '+n:'')+'\nReported: '+new Date().toLocaleString()+'\n\n'+(rep>1?'This same photo has now been reported '+rep+' times. ':'')+'A photo is attached.\n\nThank you.'};
+}
+async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}x.remove();return ok}}
+$('copy').onclick=async()=>{const r=report();toast(await copyText(r.subject+'\n\n'+r.body)?'Report copied':'Copy failed')};
+$('dl').onclick=()=>{if(!url)return;const a=document.createElement('a');a.href=url;a.download='pothole.jpg';document.body.appendChild(a);a.click();a.remove()};
+$('send').onclick=async()=>{
+  const r=report(),m=$('smsg'),file=new File([blob],'pothole.jpg',{type:'image/jpeg'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:r.subject,text:r.body});m.className='msg ok';m.textContent='Pick your email app in the share sheet and address it to the office above.';return}
+    catch(e){if(e.name==='AbortError')return}}
+  const to=$('to').value.trim();
+  if(!$('emailBox').hidden&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)){
+    location.href='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(r.subject)+'&body='+encodeURIComponent(r.body);
+    m.className='msg ok';m.textContent='Email draft opened. Tap “Save photo” and attach it before sending.';return}
+  const ok=await copyText(r.subject+'\n\n'+r.body);m.className='msg '+(ok?'ok':'err');
+  m.textContent=$('emailBox').hidden?(ok?'Report copied. Paste it into the town form and attach the saved photo.':'Copy failed. Use the buttons above.'):'Add the office email above, then tap Send report again.';
+};
+
+let rep=1,verdict=null,me=null,sent=false,mode='up';
+const api=async(p,o={})=>{const r=await fetch(p,{credentials:'same-origin',...o});let j={};try{j=await r.json()}catch(e){}
+  if(!r.ok)throw Object.assign(new Error(j.error||'Something went wrong'),{status:r.status});return j};
+const post=(p,b)=>api(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+function greet(n){q('#s0 .sub').textContent='Hi '+n+'. Four quick taps and it’s on its way to your town.'}
+
+async function check(b){const el=$('chk');verdict=null;el.className='chk';el.textContent='Checking your photo…';
+  try{const fd=new FormData();fd.append('photo',b,'pothole.jpg');const v=await api('/api/check',{method:'POST',body:fd});
+    if(!v.checked){el.textContent='Photo check is off.';return}
+    verdict=v;
+    if(v.spam||!v.pothole){el.className='chk bad';el.textContent='This doesn’t look like a pothole ('+(v.reason||'unclear')+'). Retake the photo to send it.'}
+    else{el.className='chk ok';el.textContent='Looks like a road hazard. Nice shot.'}
+  }catch(e){verdict=null;el.textContent='Photo check was skipped.'}}
+function gotPhoto(b){rep=1;sent=false;check(b)}
+
+function gateMode(m){mode=m;const up=m==='up';$('gname').hidden=$('gtown').hidden=!up;
+  $('gsubt').textContent=up?'Create your account once. Reports then go out under your name.':'Welcome back. Sign in to continue.';
+  $('gsub').textContent=up?'Create account':'Sign in';$('gtog').textContent=up?'I already have an account':'Create a new account';
+  $('gpw').autocomplete=up?'new-password':'current-password';$('gfine').hidden=!up;$('gerr').textContent='';$('gate').hidden=false}
+function signedIn(u){me=u;$('gate').hidden=true;$('gpw').value='';greet(u.name);
+  if(u.town){$('town').value=u.town;sv('pp_town',u.town);drawDest()}}
+$('gtog').onclick=()=>gateMode(mode==='up'?'in':'up');
+$('gsub').onclick=async()=>{const e=$('gerr');e.className='msg err';
+  const body={email:$('gemail').value.trim(),password:$('gpw').value,name:$('gname').value.trim(),town:$('gtown').value};
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)){e.textContent='Enter a valid email.';return}
+  if(body.password.length<8){e.textContent='Password must be at least 8 characters.';return}
+  if(mode==='up'&&body.name.length<2){e.textContent='Enter your name.';return}
+  $('gsub').disabled=true;
+  try{signedIn(await post(mode==='up'?'/api/signup':'/api/login',body))}catch(x){e.textContent=x.message}
+  $('gsub').disabled=false};
+
+const baseSend=$('send').onclick;
+$('send').onclick=async()=>{
+  if(verdict&&(verdict.spam||!verdict.pothole)){toast('Photo check failed. Retake the photo.');go(0);return}
+  if(!sent){
+    try{const fd=new FormData();fd.append('photo',blob,'pothole.jpg');
+      fd.append('town',$('town').value);fd.append('road',q('input[name=road]:checked').value);fd.append('size',size||'Medium');
+      fd.append('lat',$('lat').value);fd.append('lng',$('lng').value);fd.append('note',$('note').value.trim());
+      const r=await api('/api/reports',{method:'POST',body:fd});rep=r.repeat;sent=true;
+      if(rep>1)toast('Repeat report: this photo has been sent '+rep+' times.');
+      if(r.emailed){$('smsg').className='msg ok';$('smsg').textContent='Sent to '+$('town').value+'. Thank you!';return}
+    }catch(e){if(e.status===401){gateMode('in');return}if(e.status===422)go(0);toast(e.message);return}
+  }
+  baseSend();
+};
+
+const MEDAL=[['#FFE08A','#E3A000','#5A3B00'],['#F1F5F6','#9CA9AD','#33404A'],['#F6B58A','#B5653A','#4A2410']];
+function medal(i){const c=MEDAL[i];return "<svg width='30' height='36' viewBox='0 0 30 36' aria-label='Rank "+(i+1)+"' role='img'><defs><linearGradient id='mg"+i+"' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='"+c[0]+"'/><stop offset='1' stop-color='"+c[1]+"'/></linearGradient></defs><path d='M7 0h6.5l-2.5 12H4.5z' fill='#FF6A3D'/><path d='M23 0h-6.5l2.5 12h6.5z' fill='#7DF0C0'/><circle cx='15' cy='23' r='12' fill='url(#mg"+i+")'/><circle cx='15' cy='23' r='8.6' fill='none' stroke='#fff' stroke-opacity='.55' stroke-width='1.2'/><text x='15' y='27.6' text-anchor='middle' font-size='13' font-weight='800' font-family='Sora,system-ui,sans-serif' fill='"+c[2]+"'>"+(i+1)+"</text></svg>"}
+async function openBoard(){
+  $('board').hidden=false;const L=$('blist');L.textContent='Loading…';
+  try{const rows=await api('/api/leaderboard');L.textContent='';
+    if(!rows.length)L.textContent='No reports yet. Be the first.';
+    rows.forEach((o,i)=>{const r=document.createElement('div');r.className='rk'+(o.you?' me':'');
+      const n=document.createElement('span');n.className='n';if(i<3)n.innerHTML=medal(i);else n.textContent=i+1;
+      const m=document.createElement('span');m.className='nm';m.textContent=o.name+(o.you?' (you)':'');
+      const sm=document.createElement('small');sm.textContent=o.submitted+' reported';m.appendChild(sm);
+      const c=document.createElement('span');c.className='c';c.textContent=o.filled;
+      r.append(n,m,c);L.appendChild(r)});
+  }catch(e){L.textContent='Couldn’t load the leaderboard. Try again.'}
+  $('admin').hidden=!(me&&me.admin);
+  if(me&&me.admin){const O=$('olist');O.textContent='';
+    try{const open=await api('/api/admin/reports');if(!open.length)O.textContent='Nothing waiting.';
+      open.forEach(x=>{const r=document.createElement('div');r.className='rk';
+        const im=document.createElement('img');im.src='/api/photos/'+x.id;im.alt='';im.width=48;im.height=48;im.style.cssText='border-radius:10px;object-fit:cover;flex:none';
+        const m=document.createElement('span');m.className='nm';m.textContent=x.town+' · '+x.size;
+        const sm=document.createElement('small');sm.textContent=x.name+' · '+x.lat.toFixed(5)+', '+x.lng.toFixed(5);m.appendChild(sm);
+        const bt=document.createElement('button');bt.className='btn';bt.textContent='Filled';
+        bt.onclick=async()=>{bt.disabled=true;try{await post('/api/admin/reports/'+x.id+'/fill',{});toast('Marked as filled');openBoard()}catch(e){bt.disabled=false;toast(e.message)}};
+        r.append(im,m,bt);O.appendChild(r)})}catch(e){O.textContent='Couldn’t load open reports.'}}}
+$('lb').onclick=openBoard;$('bclose').onclick=()=>$('board').hidden=true;
+$('gout').onclick=async()=>{try{await post('/api/logout',{})}catch(e){}location.reload()};
+(async()=>{$('gtown').innerHTML=$('town').innerHTML;$('gtown').value=$('town').value;
+  try{signedIn(await api('/api/me'))}catch(e){gateMode('up')}})();
+</script></body></html>
